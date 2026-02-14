@@ -1,0 +1,61 @@
+# Build Artifacts
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.exe
+moc_*
+qrc_*
+ui_*
+Makefile
+Makefile.*
+
+# Qt Build Directories
+/backend/backend
+/backend/obj/
+/backend/moc/
+/frontend/frontend.html
+/frontend/frontend.js
+/frontend/frontend.wasm
+/frontend/qtloader.js
+/frontend/obj/
+/frontend/moc/
+
+# IDE
+.vscode/
+.idea/
+*.user
+*.user.*
+*.pro.user
+*.pro.user.*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# SSL Zertifikate (werden beim Start automatisch generiert)
+nginx/ssl/*.pem
+nginx/ssl/*.crt
+nginx/ssl/*.key
+!nginx/ssl/README.md
+
+# Logs
+*.log
+debug.log
+
+# Docker Volumes (lokale Datenbank)
+.docker/
+
+# Environment
+.env
+.env.local
+
+# PID Files
+.backend.pid
+
+# Backup Files
+*~
+*.bak
+*.swp

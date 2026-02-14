@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>qtquickcontrols2.conf</file>
+    </qresource>
+    <qresource prefix="/translations">
+        <file alias="en.qm">translations/en.qm</file>
+    </qresource>
+</RCC>

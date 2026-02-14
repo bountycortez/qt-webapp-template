@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: webapp-postgres
+    environment:
+      POSTGRES_DB: webapp
+      POSTGRES_USER: webapp_user
+      POSTGRES_PASSWORD: webapp_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./sql/init-postgres.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U webapp_user -d webapp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - webapp-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: webapp-nginx
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - webapp-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres-data:
+    driver: local
+
+networks:
+  webapp-network:
+    driver: bridge
