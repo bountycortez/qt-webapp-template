@@ -1764,10 +1764,25 @@ ApplicationWindow {
         title: editId < 0 ? qsTr("Neues Produkt") : qsTr("Produkt bearbeiten")
         modal: true
         anchors.centerIn: parent
-        width: 560
-        height: 620
+        width: 640
+        height: 680
 
         property int editId: -1
+
+        // Beim Öffnen Dialog so groß wie möglich skalieren
+        onAboutToShow: {
+            var ov = Overlay.overlay
+            if (ov && ov.width > 0 && ov.height > 0) {
+                // Breite: Fensterbreite minus kleiner Rand
+                width = Math.min(1000, Math.max(480, ov.width - 40))
+
+                // Höhe: Formularinhalt + Dialog-Overhead (Titelzeile ~56px + Footer 64px + Padding ~48px)
+                var contentH = pfFormColumn.implicitHeight
+                var overhead = 56 + 64 + 48
+                var needed   = (contentH > 0 ? contentH : 750) + overhead
+                height = Math.min(Math.max(needed, 400), ov.height - 40)
+            }
+        }
 
         function clearForm() {
             pfNumber.text      = ""
@@ -1788,12 +1803,12 @@ ApplicationWindow {
             pfNumber.text      = p.product_number || ""
             pfGtin.text        = p.gtin !== null && p.gtin !== undefined ? String(p.gtin) : ""
             pfName.text        = p.name || ""
-            var units = ["ST","KG","L","g","ml"]
+            var units = ["ST","KG"]
             pfUnit.currentIndex = Math.max(0, units.indexOf(p.unit))
             pfPurchase.text    = p.purchase_price !== null && p.purchase_price !== undefined
-                                 ? Number(p.purchase_price).toFixed(2) : ""
+                                 ? Number(p.purchase_price).toFixed(2).replace('.', ',') : ""
             pfSales.text       = p.sales_price !== undefined
-                                 ? Number(p.sales_price).toFixed(2) : ""
+                                 ? Number(p.sales_price).toFixed(2).replace('.', ',') : ""
             pfVat.currentIndex = p.vat_code == 1 ? 0 : 1
             pfCatId.text       = p.category_id !== null && p.category_id !== undefined ? String(p.category_id) : ""
             pfSuppId.text      = p.supplier_id !== null && p.supplier_id !== undefined ? String(p.supplier_id) : ""
@@ -1803,18 +1818,22 @@ ApplicationWindow {
         }
 
         ScrollView {
+            id: pfScrollView
             anchors.fill: parent
             clip: true
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
             ColumnLayout {
-                width: 520
-                spacing: 10
+                id: pfFormColumn
+                width: pfScrollView.width
+                spacing: 0
 
                 // Fehlermeldung
                 Rectangle {
                     id: pfErrorBox
                     Layout.fillWidth: true
-                    height: pfError.implicitHeight + 12
+                    Layout.bottomMargin: 8
+                    height: pfError.implicitHeight + 14
                     color: "#FFEBEE"; border.color: "#F44336"; border.width: 1; radius: 4
                     visible: pfError.text !== ""
                     Text {
@@ -1828,13 +1847,28 @@ ApplicationWindow {
                     }
                 }
 
+                // ── Sektion: Stammdaten ──────────────────────────────────
+                Label {
+                    text: qsTr("Stammdaten")
+                    font.bold: true; font.pixelSize: 12
+                    color: "#C62828"
+                    Layout.topMargin: 2
+                }
+                Rectangle {
+                    Layout.fillWidth: true; height: 1
+                    color: "#FFCDD2"; Layout.bottomMargin: 10
+                }
+
                 GridLayout {
                     columns: 2
-                    columnSpacing: 12
-                    rowSpacing: 8
+                    columnSpacing: 16; rowSpacing: 12
                     Layout.fillWidth: true
+                    Layout.bottomMargin: 14
 
-                    Label { text: qsTr("Art.-Nr. *"); font.bold: true }
+                    Label {
+                        text: qsTr("Art.-Nr. *"); font.bold: true
+                        Layout.preferredWidth: 140; Layout.alignment: Qt.AlignVCenter
+                    }
                     TextField {
                         id: pfNumber
                         placeholderText: "z.B. P001"
@@ -1842,7 +1876,10 @@ ApplicationWindow {
                         maximumLength: 20
                     }
 
-                    Label { text: "GTIN" }
+                    Label {
+                        text: "GTIN"
+                        Layout.preferredWidth: 140; Layout.alignment: Qt.AlignVCenter
+                    }
                     TextField {
                         id: pfGtin
                         placeholderText: "14-stellige EAN"
@@ -1851,7 +1888,10 @@ ApplicationWindow {
                         validator: RegularExpressionValidator { regularExpression: /^\d{0,14}$/ }
                     }
 
-                    Label { text: qsTr("Name *"); font.bold: true }
+                    Label {
+                        text: qsTr("Name *"); font.bold: true
+                        Layout.preferredWidth: 140; Layout.alignment: Qt.AlignVCenter
+                    }
                     TextField {
                         id: pfName
                         placeholderText: qsTr("Produktname")
@@ -1859,64 +1899,144 @@ ApplicationWindow {
                         maximumLength: 100
                     }
 
-                    Label { text: qsTr("Einheit *"); font.bold: true }
+                    Label {
+                        text: qsTr("Einheit *"); font.bold: true
+                        Layout.preferredWidth: 140; Layout.alignment: Qt.AlignVCenter
+                    }
                     ComboBox {
                         id: pfUnit
-                        model: ["ST", "KG", "L", "g", "ml"]
-                        Layout.preferredWidth: 120
+                        model: ["ST", "KG"]
+                        Layout.preferredWidth: 140
                     }
+                }
 
-                    Label { text: qsTr("EK-Preis €") }
+                // ── Sektion: Preise & Steuern ────────────────────────────
+                Label {
+                    text: qsTr("Preise & Steuern")
+                    font.bold: true; font.pixelSize: 12
+                    color: "#C62828"
+                }
+                Rectangle {
+                    Layout.fillWidth: true; height: 1
+                    color: "#FFCDD2"; Layout.bottomMargin: 10
+                }
+
+                GridLayout {
+                    columns: 2
+                    columnSpacing: 16; rowSpacing: 12
+                    Layout.fillWidth: true
+                    Layout.bottomMargin: 14
+
+                    Label {
+                        text: qsTr("EK-Preis €")
+                        Layout.preferredWidth: 140; Layout.alignment: Qt.AlignVCenter
+                    }
                     TextField {
                         id: pfPurchase
-                        placeholderText: "0.00"
-                        Layout.preferredWidth: 120
-                        validator: RegularExpressionValidator { regularExpression: /^\d{0,8}([.,]\d{0,2})?$/ }
+                        placeholderText: "0,00"
+                        Layout.preferredWidth: 160
+                        validator: RegularExpressionValidator { regularExpression: /^\d{0,8}(,\d{0,2})?$/ }
+                        inputMethodHints: Qt.ImhFormattedNumbersOnly
                     }
 
-                    Label { text: qsTr("VK-Preis € *"); font.bold: true }
+                    Label {
+                        text: qsTr("VK-Preis € *"); font.bold: true
+                        Layout.preferredWidth: 140; Layout.alignment: Qt.AlignVCenter
+                    }
                     TextField {
                         id: pfSales
-                        placeholderText: "0.00"
-                        Layout.preferredWidth: 120
-                        validator: RegularExpressionValidator { regularExpression: /^\d{0,8}([.,]\d{0,2})?$/ }
+                        placeholderText: "0,00"
+                        Layout.preferredWidth: 160
+                        validator: RegularExpressionValidator { regularExpression: /^\d{0,8}(,\d{0,2})?$/ }
+                        inputMethodHints: Qt.ImhFormattedNumbersOnly
                     }
 
-                    Label { text: qsTr("MwSt.-Satz *"); font.bold: true }
+                    Label {
+                        text: qsTr("MwSt.-Satz *"); font.bold: true
+                        Layout.preferredWidth: 140; Layout.alignment: Qt.AlignVCenter
+                    }
                     ComboBox {
                         id: pfVat
-                        model: ["1 — reduziert (7%)", "2 — normal (19%)"]
-                        Layout.preferredWidth: 200
+                        model: ["1 — ermäßigt (10%)", "2 — normal (20%)"]
+                        Layout.fillWidth: true
                     }
+                }
 
-                    Label { text: qsTr("Kategorie-ID") }
+                // ── Sektion: Klassifizierung ─────────────────────────────
+                Label {
+                    text: qsTr("Klassifizierung")
+                    font.bold: true; font.pixelSize: 12
+                    color: "#C62828"
+                }
+                Rectangle {
+                    Layout.fillWidth: true; height: 1
+                    color: "#FFCDD2"; Layout.bottomMargin: 10
+                }
+
+                GridLayout {
+                    columns: 2
+                    columnSpacing: 16; rowSpacing: 12
+                    Layout.fillWidth: true
+                    Layout.bottomMargin: 14
+
+                    Label {
+                        text: qsTr("Kategorie-ID")
+                        Layout.preferredWidth: 140; Layout.alignment: Qt.AlignVCenter
+                    }
                     TextField {
                         id: pfCatId
                         placeholderText: qsTr("optional")
-                        Layout.preferredWidth: 100
+                        Layout.preferredWidth: 140
                         inputMethodHints: Qt.ImhDigitsOnly
                         validator: IntValidator { bottom: 1; top: 999999999 }
                     }
 
-                    Label { text: qsTr("Lieferanten-ID") }
+                    Label {
+                        text: qsTr("Lieferanten-ID")
+                        Layout.preferredWidth: 140; Layout.alignment: Qt.AlignVCenter
+                    }
                     TextField {
                         id: pfSuppId
                         placeholderText: qsTr("optional")
-                        Layout.preferredWidth: 100
+                        Layout.preferredWidth: 140
                         inputMethodHints: Qt.ImhDigitsOnly
                         validator: IntValidator { bottom: 1; top: 999999999 }
                     }
+                }
 
-                    Label { text: qsTr("Beschreibung") }
+                // ── Sektion: Weitere Angaben ─────────────────────────────
+                Label {
+                    text: qsTr("Weitere Angaben")
+                    font.bold: true; font.pixelSize: 12
+                    color: "#C62828"
+                }
+                Rectangle {
+                    Layout.fillWidth: true; height: 1
+                    color: "#FFCDD2"; Layout.bottomMargin: 10
+                }
+
+                GridLayout {
+                    columns: 2
+                    columnSpacing: 16; rowSpacing: 12
+                    Layout.fillWidth: true
+
+                    Label {
+                        text: qsTr("Beschreibung")
+                        Layout.preferredWidth: 140; Layout.alignment: Qt.AlignTop
+                        topPadding: 8
+                    }
                     TextArea {
                         id: pfDesc
                         placeholderText: qsTr("Freitext, max. 500 Zeichen")
                         wrapMode: TextArea.Wrap
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 70
+                        Layout.preferredHeight: 88
                     }
 
-                    Label { text: qsTr("Aktiv") }
+                    Label {
+                        text: qsTr("Aktiv")
+                        Layout.preferredWidth: 140; Layout.alignment: Qt.AlignVCenter
+                    }
                     CheckBox {
                         id: pfActive
                         checked: true
@@ -1926,16 +2046,72 @@ ApplicationWindow {
             }
         }
 
-        footer: DialogButtonBox {
-            Button {
-                text: productDialog.editId < 0 ? qsTr("Anlegen") : qsTr("Speichern")
-                highlighted: true
-                enabled: pfNumber.text !== "" && pfName.text !== "" && pfSales.text !== ""
-                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+        // ── Fußleiste: Buttons + Resize-Griff ───────────────────────
+        footer: Item {
+            height: 64
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 12
+                anchors.rightMargin: 32
+                anchors.topMargin: 10
+                anchors.bottomMargin: 14
+                spacing: 8
+
+                Item { Layout.fillWidth: true }
+
+                Button {
+                    text: productDialog.editId < 0 ? qsTr("Anlegen") : qsTr("Speichern")
+                    highlighted: true
+                    enabled: pfNumber.text !== "" && pfName.text !== "" && pfSales.text !== ""
+                    onClicked: productDialog.accept()
+                }
+                Button {
+                    text: qsTr("Abbrechen")
+                    onClicked: productDialog.reject()
+                }
             }
-            Button {
-                text: qsTr("Abbrechen")
-                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+
+            // Resize-Griff — rechte untere Ecke des Dialogs
+            Item {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                width: 22; height: 22
+
+                Canvas {
+                    anchors.fill: parent
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.strokeStyle = "#BDBDBD"
+                        ctx.lineWidth = 1.5
+                        ctx.lineCap = "round"
+                        for (var i = 0; i < 3; i++) {
+                            var o = i * 5 + 4
+                            ctx.beginPath()
+                            ctx.moveTo(width - o, height - 2)
+                            ctx.lineTo(width - 2, height - o)
+                            ctx.stroke()
+                        }
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.SizeFDiagCursor
+                    property real startX: 0
+                    property real startY: 0
+
+                    onPressed: function(mouse) {
+                        startX = mouse.x
+                        startY = mouse.y
+                    }
+                    onPositionChanged: function(mouse) {
+                        if (pressed) {
+                            productDialog.width  = Math.max(480, productDialog.width  + mouse.x - startX)
+                            productDialog.height = Math.max(360, productDialog.height + mouse.y - startY)
+                        }
+                    }
+                }
             }
         }
 
