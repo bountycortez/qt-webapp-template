@@ -89,7 +89,7 @@ qt-webapp-template/
 │   └── authmanager.h/cpp       # JWT Token-Auth (HMAC-SHA256)
 ├── frontend/                    # QML WebAssembly Client
 │   ├── frontend.pro            # qmake Projektdatei
-│   ├── main.qml                # UI (5 Tabs + Login-Dialog)
+│   ├── main.qml                # UI (6 Tabs + Login-Dialog)
 │   ├── main.cpp                # WASM Entry Point (Style/Lang URL-Params)
 │   ├── stylehelper.h           # Emscripten JS-Interop
 │   ├── qtquickcontrols2.conf   # Material/Fusion/Universal Styling
@@ -123,6 +123,10 @@ qt-webapp-template/
 | `GET` | `/api/tables` | Bearer | PostgreSQL-Tabellenliste |
 | `GET` | `/api/table?name=X` | Bearer | Tabelleninhalt (max 200 Zeilen) |
 | `POST` | `/api/shutdown` | Bearer | Server beenden (nur Dev) |
+| `GET` | `/api/products` | Bearer | Alle Produkte laden |
+| `POST` | `/api/products` | Bearer | Neues Produkt anlegen |
+| `PUT` | `/api/products/{id}` | Bearer | Produkt aktualisieren |
+| `DELETE` | `/api/products/{id}` | Bearer | Produkt löschen |
 
 ### Login-Beispiel
 ```bash
@@ -160,7 +164,7 @@ Für Firmennetzwerke stehen alternative NGINX-Configs bereit:
 
 ## Frontend Features
 
-### 5 Tabs
+### 6 Tabs
 
 **Tab 1: Basics** — Buttons, CheckBox, RadioButton, Switch, Slider, RangeSlider
 
@@ -171,6 +175,8 @@ Für Firmennetzwerke stehen alternative NGINX-Configs bereit:
 **Tab 4: Display** — ProgressBar, BusyIndicator (mit Switch), Labels, Tooltips, TabBar
 
 **Tab 5: Database** — Greeting laden (DE/EN/ES), DB-Browser (Tabellenliste + Daten + Detail-Popup), Server-Kontrolle, API-Info
+
+**Tab 6: Produkte** — Vollständiges CRUD für die `product`-Tabelle: Tabellen-Ansicht mit Klick-Selektion, Doppelklick zum Bearbeiten, Dialoge für Neu/Bearbeiten/Löschen. Felder: Art.-Nr., GTIN, Name, Einheit, EK-/VK-Preis, MwSt.-Code, Kategorie, Lieferant, Beschreibung, Aktiv-Flag. Beim ersten Start werden 5 Lebensmittel-Beispielsätze angelegt (Mineralwasser, Chips, Reis, Schokolade, Brot).
 
 ### Weitere Features
 

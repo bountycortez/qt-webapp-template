@@ -83,8 +83,48 @@ sqlplus username/password@//oracle-host:1521/SERVICE_NAME @sql/init-oracle.sql
 ```
 
 Das Script erstellt:
-- Tabelle `GREETINGS`
-- Initialen Datensatz "Hello World!"
+- Tabelle `GREETINGS` — mehrsprachige Begrüßungstexte
+- Tabelle `PRODUCT` — Produktstammdaten mit CRUD-Unterstützung
+
+### Oracle DDL — Tabelle PRODUCT
+
+```sql
+CREATE TABLE product (
+    product_id     NUMBER(9) GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    product_number VARCHAR2(20) UNIQUE NOT NULL,
+    gtin           NUMBER(14),
+    name           VARCHAR2(100) NOT NULL,
+    unit           VARCHAR2(2) NOT NULL DEFAULT 'ST',
+
+    -- Kategorie & Lieferant
+    category_id    NUMBER(9),
+    supplier_id    NUMBER(9),
+
+    -- Preise
+    purchase_price NUMBER(10,2),
+    sales_price    NUMBER(10,2) NOT NULL,
+    vat_code       NUMBER(1) NOT NULL DEFAULT 2,
+
+    -- Beschreibung
+    description    VARCHAR2(500),
+
+    -- Status
+    active         NUMBER(1) NOT NULL DEFAULT 1,
+
+    -- Audit
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at     TIMESTAMP,
+    updated_by     VARCHAR2(25)
+);
+
+CREATE INDEX idx_product_number ON product(product_number);
+CREATE INDEX idx_gtin           ON product(gtin);
+CREATE INDEX idx_category       ON product(category_id);
+```
+
+> **Hinweis:** In `database.cpp` muss für Oracle `RETURNING product_id INTO :new_id` statt
+> PostgreSQL-`RETURNING product_id` verwendet werden. Das `SERIAL`-Keyword wird zu
+> `GENERATED ALWAYS AS IDENTITY`. Außerdem `FETCH FIRST 200 ROWS ONLY` statt `LIMIT 200`.
 
 ## 4. Backend für Oracle konfigurieren
 
@@ -441,7 +481,7 @@ sudo tar -czf /backup/webapp-$(date +%Y%m%d).tar.gz /opt/webapp
 ## Checkliste Production Deployment
 
 - [ ] Oracle Instant Client installiert
-- [ ] Oracle Schema angelegt (`init-oracle.sql`)
+- [ ] Oracle Schema angelegt (`init-oracle.sql`) inkl. Tabellen `GREETINGS` und `PRODUCT`
 - [ ] Backend kompiliert mit `QOCI` Treiber
 - [ ] DB-Passwort in Umgebungsvariable/Vault
 - [ ] API-Credentials gesetzt (`API_USER`, `API_PASSWORD`, `API_SECRET`)

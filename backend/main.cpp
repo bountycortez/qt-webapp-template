@@ -20,6 +20,9 @@ int main(int argc, char *argv[])
 
     qInfo() << "Datenbank erfolgreich verbunden";
 
+    // Product-Tabelle anlegen + Beispieldaten einfügen
+    db.initProductTable();
+
     // Auth-Manager initialisieren
     AuthManager auth;
     qInfo() << "Authentifizierung aktiviert (Token-Lebensdauer:" << auth.tokenLifetime() / 3600 << "Stunden)";

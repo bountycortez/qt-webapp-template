@@ -69,6 +69,40 @@ void Server::setupRoutes()
         return handleShutdown(request);
     });
 
+    // ===== PRODUCT API =====
+
+    // GET /api/products — alle Produkte laden
+    httpServer.route("/api/products", QHttpServerRequest::Method::Get,
+                     [this](const QHttpServerRequest &request) {
+        QString authError = checkAuth(request);
+        if (!authError.isEmpty()) return unauthorizedResponse(authError);
+        return handleGetProducts(request);
+    });
+
+    // POST /api/products — neues Produkt anlegen
+    httpServer.route("/api/products", QHttpServerRequest::Method::Post,
+                     [this](const QHttpServerRequest &request) {
+        QString authError = checkAuth(request);
+        if (!authError.isEmpty()) return unauthorizedResponse(authError);
+        return handleCreateProduct(request);
+    });
+
+    // PUT /api/products/<id> — Produkt aktualisieren
+    httpServer.route("/api/products/<arg>", QHttpServerRequest::Method::Put,
+                     [this](int productId, const QHttpServerRequest &request) {
+        QString authError = checkAuth(request);
+        if (!authError.isEmpty()) return unauthorizedResponse(authError);
+        return handleUpdateProduct(productId, request);
+    });
+
+    // DELETE /api/products/<id> — Produkt löschen
+    httpServer.route("/api/products/<arg>", QHttpServerRequest::Method::Delete,
+                     [this](int productId, const QHttpServerRequest &request) {
+        QString authError = checkAuth(request);
+        if (!authError.isEmpty()) return unauthorizedResponse(authError);
+        return handleDeleteProduct(productId, request);
+    });
+
     // Catch-All für 404
     httpServer.route("/", []() {
         QJsonObject response;
@@ -279,6 +313,72 @@ QHttpServerResponse Server::handleHealth()
     response["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
 
     return jsonResponse(response);
+}
+
+// ===== PRODUCT HANDLER =====
+
+QString Server::getUsernameFromRequest(const QHttpServerRequest &request) const
+{
+    const QHttpHeaders headers = request.headers();
+    for (qsizetype i = 0; i < headers.size(); ++i) {
+        if (headers.nameAt(i).compare("authorization", Qt::CaseInsensitive) == 0) {
+            QString h = QString::fromUtf8(headers.valueAt(i).toByteArray());
+            if (h.startsWith("Bearer ", Qt::CaseInsensitive))
+                return authManager->validateToken(h.mid(7).trimmed());
+        }
+    }
+    return {};
+}
+
+QHttpServerResponse Server::handleGetProducts(const QHttpServerRequest &request)
+{
+    Q_UNUSED(request);
+    qDebug() << "GET /api/products";
+    QJsonObject data = db->getProducts();
+    if (data.contains("error"))
+        return errorResponse(data["error"].toString());
+    return jsonResponse(data);
+}
+
+QHttpServerResponse Server::handleCreateProduct(const QHttpServerRequest &request)
+{
+    qDebug() << "POST /api/products";
+    QJsonDocument doc = QJsonDocument::fromJson(request.body());
+    if (doc.isNull() || !doc.isObject())
+        return errorResponse("Ungültiger JSON-Body", QHttpServerResponse::StatusCode::BadRequest);
+
+    QString username = getUsernameFromRequest(request);
+    QJsonObject result = db->insertProduct(doc.object(), username);
+
+    if (result.contains("error"))
+        return errorResponse(result["error"].toString(), QHttpServerResponse::StatusCode::BadRequest);
+    return jsonResponse(result, QHttpServerResponse::StatusCode::Created);
+}
+
+QHttpServerResponse Server::handleUpdateProduct(int productId, const QHttpServerRequest &request)
+{
+    qDebug() << "PUT /api/products/" << productId;
+    QJsonDocument doc = QJsonDocument::fromJson(request.body());
+    if (doc.isNull() || !doc.isObject())
+        return errorResponse("Ungültiger JSON-Body", QHttpServerResponse::StatusCode::BadRequest);
+
+    QString username = getUsernameFromRequest(request);
+    QJsonObject result = db->updateProduct(productId, doc.object(), username);
+
+    if (result.contains("error"))
+        return errorResponse(result["error"].toString(), QHttpServerResponse::StatusCode::BadRequest);
+    return jsonResponse(result);
+}
+
+QHttpServerResponse Server::handleDeleteProduct(int productId, const QHttpServerRequest &request)
+{
+    Q_UNUSED(request);
+    qDebug() << "DELETE /api/products/" << productId;
+    QJsonObject result = db->deleteProduct(productId);
+
+    if (result.contains("error"))
+        return errorResponse(result["error"].toString(), QHttpServerResponse::StatusCode::NotFound);
+    return jsonResponse(result);
 }
 
 // ===== HILFSFUNKTIONEN =====

@@ -71,7 +71,7 @@ ApplicationWindow {
                 spacing: 0
                 
                 Repeater {
-                    model: ["Basics", "Input", "Selection", "Display", "Database"]
+                    model: ["Basics", "Input", "Selection", "Display", "Database", "Produkte"]
                     
                     Rectangle {
                         Layout.fillWidth: true
@@ -1246,10 +1246,226 @@ ApplicationWindow {
                             }
                         }
                     }
+                    // ===== TAB 6: PRODUKTE =====
+                    Item {
+                        ColumnLayout {
+                            width: parent.width
+                            spacing: 10
+
+                            // Toolbar
+                            GroupBox {
+                                title: qsTr("Produkt-Verwaltung")
+                                Layout.fillWidth: true
+
+                                RowLayout {
+                                    spacing: 8
+
+                                    Button {
+                                        text: qsTr("＋ Neu")
+                                        highlighted: true
+                                        onClicked: {
+                                            productDialog.editId = -1
+                                            productDialog.clearForm()
+                                            productDialog.open()
+                                        }
+                                    }
+                                    Button {
+                                        text: qsTr("✎ Bearbeiten")
+                                        enabled: selectedProductId >= 0
+                                        onClicked: {
+                                            productDialog.editId = selectedProductId
+                                            productDialog.fillForm(selectedProductData)
+                                            productDialog.open()
+                                        }
+                                    }
+                                    Button {
+                                        text: qsTr("✕ Löschen")
+                                        enabled: selectedProductId >= 0
+                                        background: Rectangle {
+                                            color: parent.enabled
+                                                   ? (parent.pressed ? "#C62828" : (parent.hovered ? "#EF5350" : "#F44336"))
+                                                   : "#ccc"
+                                            radius: 4
+                                        }
+                                        contentItem: Text {
+                                            text: parent.text; font: parent.font
+                                            color: parent.enabled ? "white" : "#888"
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                        }
+                                        onClicked: productDeleteDialog.open()
+                                    }
+
+                                    Item { Layout.fillWidth: true }
+
+                                    Text {
+                                        text: productData.length + qsTr(" Produkte")
+                                        color: "#999"; font.pixelSize: 12
+                                    }
+
+                                    Button {
+                                        text: qsTr("⟳ Aktualisieren")
+                                        onClicked: loadProducts()
+                                    }
+                                }
+                            }
+
+                            // Tabellen-Header
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 34
+                                color: "#C62828"
+                                radius: 4
+                                visible: productData.length > 0
+
+                                Row {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: 10
+                                    anchors.rightMargin: 10
+
+                                    Repeater {
+                                        model: [
+                                            {label: "ID",        w: 50},
+                                            {label: "Art.-Nr.",  w: 100},
+                                            {label: "Name",      w: 260},
+                                            {label: "Einheit",   w: 60},
+                                            {label: "EK-Preis",  w: 80},
+                                            {label: "VK-Preis",  w: 80},
+                                            {label: "MwSt.",     w: 55},
+                                            {label: "Aktiv",     w: 50}
+                                        ]
+
+                                        Text {
+                                            width: modelData.w
+                                            height: parent.height
+                                            text: modelData.label
+                                            color: "white"; font.bold: true; font.pixelSize: 12
+                                            verticalAlignment: Text.AlignVCenter
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Produktliste
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 460
+                                color: "white"
+                                border.color: "#e0e0e0"
+                                border.width: 1
+                                radius: 4
+                                clip: true
+
+                                ListView {
+                                    id: productListView
+                                    anchors.fill: parent
+                                    clip: true
+                                    model: productModel
+
+                                    delegate: Item {
+                                        width: productListView.width
+                                        height: 36
+
+                                        property var pdata: JSON.parse(rowJson)
+                                        property bool isSelected: pdata.product_id === selectedProductId
+
+                                        Rectangle {
+                                            anchors.fill: parent
+                                            color: isSelected ? "#FFEBEE"
+                                                   : (index % 2 === 0 ? "#FFFFFF" : "#FFF8F8")
+                                            border.color: isSelected ? "#E57373" : "transparent"
+                                            border.width: isSelected ? 1 : 0
+                                        }
+
+                                        Row {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 10
+                                            anchors.rightMargin: 10
+
+                                            Repeater {
+                                                model: [
+                                                    {key: "product_id",     w: 50,  fmt: "int"},
+                                                    {key: "product_number", w: 100, fmt: "str"},
+                                                    {key: "name",           w: 260, fmt: "str"},
+                                                    {key: "unit",           w: 60,  fmt: "str"},
+                                                    {key: "purchase_price", w: 80,  fmt: "eur"},
+                                                    {key: "sales_price",    w: 80,  fmt: "eur"},
+                                                    {key: "vat_code",       w: 55,  fmt: "vat"},
+                                                    {key: "active",         w: 50,  fmt: "bool"}
+                                                ]
+
+                                                Text {
+                                                    width: modelData.w
+                                                    height: 36
+                                                    font.pixelSize: 12
+                                                    color: {
+                                                        if (modelData.fmt === "eur") return "#4CAF50"
+                                                        if (modelData.fmt === "bool") return pdata[modelData.key] == 1 ? "#4CAF50" : "#F44336"
+                                                        return "#424242"
+                                                    }
+                                                    font.bold: modelData.fmt === "bool"
+                                                    verticalAlignment: Text.AlignVCenter
+                                                    elide: Text.ElideRight
+                                                    text: {
+                                                        var v = pdata[modelData.key]
+                                                        if (v === null || v === undefined) return "—"
+                                                        if (modelData.fmt === "eur")  return "€ " + Number(v).toFixed(2)
+                                                        if (modelData.fmt === "vat")  return v == 1 ? "7%" : "19%"
+                                                        if (modelData.fmt === "bool") return v == 1 ? "✓ Ja" : "✗ Nein"
+                                                        return String(v)
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: {
+                                                selectedProductId   = pdata.product_id
+                                                selectedProductData = pdata
+                                                outputText = "Produkt gewählt: " + pdata.name + " (ID " + pdata.product_id + ")"
+                                            }
+                                            onDoubleClicked: {
+                                                selectedProductId   = pdata.product_id
+                                                selectedProductData = pdata
+                                                productDialog.editId = pdata.product_id
+                                                productDialog.fillForm(pdata)
+                                                productDialog.open()
+                                            }
+                                        }
+                                    }
+
+                                    ScrollBar.vertical: ScrollBar {}
+                                }
+
+                                // Leer-Hinweis
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: qsTr("Keine Produkte geladen — bitte anmelden und 'Aktualisieren' klicken")
+                                    color: "#ccc"; font.pixelSize: 14; font.italic: true
+                                    visible: productModel.count === 0
+                                }
+                            }
+
+                            // API-Info
+                            GroupBox {
+                                title: qsTr("API Endpunkte (Produkte)")
+                                Layout.fillWidth: true
+
+                                ColumnLayout {
+                                    spacing: 2
+                                    Label { text: "GET    /api/products";       font.family: "monospace"; font.pixelSize: 11; color: "#2196F3" }
+                                    Label { text: "POST   /api/products";       font.family: "monospace"; font.pixelSize: 11; color: "#4CAF50" }
+                                    Label { text: "PUT    /api/products/{id}";  font.family: "monospace"; font.pixelSize: 11; color: "#FF9800" }
+                                    Label { text: "DELETE /api/products/{id}";  font.family: "monospace"; font.pixelSize: 11; color: "#F44336" }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
-        
+
         // ===== OUTPUT CONSOLE =====
         Rectangle {
             Layout.fillWidth: true
@@ -1542,6 +1758,229 @@ ApplicationWindow {
         }
     }
 
+    // ===== PRODUKT EDIT DIALOG =====
+    Dialog {
+        id: productDialog
+        title: editId < 0 ? qsTr("Neues Produkt") : qsTr("Produkt bearbeiten")
+        modal: true
+        anchors.centerIn: parent
+        width: 560
+        height: 620
+
+        property int editId: -1
+
+        function clearForm() {
+            pfNumber.text      = ""
+            pfGtin.text        = ""
+            pfName.text        = ""
+            pfUnit.currentIndex = 0
+            pfPurchase.text    = ""
+            pfSales.text       = ""
+            pfVat.currentIndex = 0
+            pfCatId.text       = ""
+            pfSuppId.text      = ""
+            pfDesc.text        = ""
+            pfActive.checked   = true
+            pfError.text       = ""
+        }
+
+        function fillForm(p) {
+            pfNumber.text      = p.product_number || ""
+            pfGtin.text        = p.gtin !== null && p.gtin !== undefined ? String(p.gtin) : ""
+            pfName.text        = p.name || ""
+            var units = ["ST","KG","L","g","ml"]
+            pfUnit.currentIndex = Math.max(0, units.indexOf(p.unit))
+            pfPurchase.text    = p.purchase_price !== null && p.purchase_price !== undefined
+                                 ? Number(p.purchase_price).toFixed(2) : ""
+            pfSales.text       = p.sales_price !== undefined
+                                 ? Number(p.sales_price).toFixed(2) : ""
+            pfVat.currentIndex = p.vat_code == 1 ? 0 : 1
+            pfCatId.text       = p.category_id !== null && p.category_id !== undefined ? String(p.category_id) : ""
+            pfSuppId.text      = p.supplier_id !== null && p.supplier_id !== undefined ? String(p.supplier_id) : ""
+            pfDesc.text        = p.description || ""
+            pfActive.checked   = p.active == 1
+            pfError.text       = ""
+        }
+
+        ScrollView {
+            anchors.fill: parent
+            clip: true
+
+            ColumnLayout {
+                width: 520
+                spacing: 10
+
+                // Fehlermeldung
+                Rectangle {
+                    id: pfErrorBox
+                    Layout.fillWidth: true
+                    height: pfError.implicitHeight + 12
+                    color: "#FFEBEE"; border.color: "#F44336"; border.width: 1; radius: 4
+                    visible: pfError.text !== ""
+                    Text {
+                        id: pfError
+                        text: ""
+                        color: "#C62828"; font.pixelSize: 12
+                        anchors.centerIn: parent
+                        width: parent.width - 16
+                        wrapMode: Text.Wrap
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                }
+
+                GridLayout {
+                    columns: 2
+                    columnSpacing: 12
+                    rowSpacing: 8
+                    Layout.fillWidth: true
+
+                    Label { text: qsTr("Art.-Nr. *"); font.bold: true }
+                    TextField {
+                        id: pfNumber
+                        placeholderText: "z.B. P001"
+                        Layout.fillWidth: true
+                        maximumLength: 20
+                    }
+
+                    Label { text: "GTIN" }
+                    TextField {
+                        id: pfGtin
+                        placeholderText: "14-stellige EAN"
+                        Layout.fillWidth: true
+                        inputMethodHints: Qt.ImhDigitsOnly
+                        validator: RegularExpressionValidator { regularExpression: /^\d{0,14}$/ }
+                    }
+
+                    Label { text: qsTr("Name *"); font.bold: true }
+                    TextField {
+                        id: pfName
+                        placeholderText: qsTr("Produktname")
+                        Layout.fillWidth: true
+                        maximumLength: 100
+                    }
+
+                    Label { text: qsTr("Einheit *"); font.bold: true }
+                    ComboBox {
+                        id: pfUnit
+                        model: ["ST", "KG", "L", "g", "ml"]
+                        Layout.preferredWidth: 120
+                    }
+
+                    Label { text: qsTr("EK-Preis €") }
+                    TextField {
+                        id: pfPurchase
+                        placeholderText: "0.00"
+                        Layout.preferredWidth: 120
+                        validator: RegularExpressionValidator { regularExpression: /^\d{0,8}([.,]\d{0,2})?$/ }
+                    }
+
+                    Label { text: qsTr("VK-Preis € *"); font.bold: true }
+                    TextField {
+                        id: pfSales
+                        placeholderText: "0.00"
+                        Layout.preferredWidth: 120
+                        validator: RegularExpressionValidator { regularExpression: /^\d{0,8}([.,]\d{0,2})?$/ }
+                    }
+
+                    Label { text: qsTr("MwSt.-Satz *"); font.bold: true }
+                    ComboBox {
+                        id: pfVat
+                        model: ["1 — reduziert (7%)", "2 — normal (19%)"]
+                        Layout.preferredWidth: 200
+                    }
+
+                    Label { text: qsTr("Kategorie-ID") }
+                    TextField {
+                        id: pfCatId
+                        placeholderText: qsTr("optional")
+                        Layout.preferredWidth: 100
+                        inputMethodHints: Qt.ImhDigitsOnly
+                        validator: IntValidator { bottom: 1; top: 999999999 }
+                    }
+
+                    Label { text: qsTr("Lieferanten-ID") }
+                    TextField {
+                        id: pfSuppId
+                        placeholderText: qsTr("optional")
+                        Layout.preferredWidth: 100
+                        inputMethodHints: Qt.ImhDigitsOnly
+                        validator: IntValidator { bottom: 1; top: 999999999 }
+                    }
+
+                    Label { text: qsTr("Beschreibung") }
+                    TextArea {
+                        id: pfDesc
+                        placeholderText: qsTr("Freitext, max. 500 Zeichen")
+                        wrapMode: TextArea.Wrap
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 70
+                    }
+
+                    Label { text: qsTr("Aktiv") }
+                    CheckBox {
+                        id: pfActive
+                        checked: true
+                        text: pfActive.checked ? qsTr("Ja") : qsTr("Nein")
+                    }
+                }
+            }
+        }
+
+        footer: DialogButtonBox {
+            Button {
+                text: productDialog.editId < 0 ? qsTr("Anlegen") : qsTr("Speichern")
+                highlighted: true
+                enabled: pfNumber.text !== "" && pfName.text !== "" && pfSales.text !== ""
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+            }
+            Button {
+                text: qsTr("Abbrechen")
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            }
+        }
+
+        onAccepted: saveProduct()
+    }
+
+    // ===== PRODUKT LÖSCH-BESTÄTIGUNG =====
+    Dialog {
+        id: productDeleteDialog
+        title: qsTr("Produkt löschen?")
+        modal: true
+        anchors.centerIn: parent
+        width: 420
+
+        Label {
+            text: selectedProductData
+                  ? qsTr("Möchten Sie folgendes Produkt wirklich löschen?\n\n")
+                    + selectedProductData.product_number + " — " + selectedProductData.name
+                  : ""
+            wrapMode: Text.WordWrap
+            width: parent.width
+        }
+
+        footer: DialogButtonBox {
+            Button {
+                text: qsTr("Löschen")
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+                background: Rectangle {
+                    color: parent.pressed ? "#C62828" : (parent.hovered ? "#EF5350" : "#F44336")
+                    radius: 4
+                }
+                contentItem: Text {
+                    text: parent.text; font: parent.font; color: "white"
+                    horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+                }
+            }
+            Button {
+                text: qsTr("Abbrechen")
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+            }
+        }
+
+        onAccepted: deleteProduct(selectedProductId)
+    }
+
     // ===== JAVASCRIPT FUNKTIONEN =====
 
     function performLogin() {
@@ -1734,9 +2173,117 @@ ApplicationWindow {
         xhr.send();
     }
 
+    // ===== PRODUKTE STATE =====
+    property var productData: []
+    property int selectedProductId: -1
+    property var selectedProductData: null
+
+    // ===== PRODUKTE FUNKTIONEN =====
+
+    function loadProducts() {
+        if (!isLoggedIn) return
+        outputText = qsTr("Lade Produkte...")
+
+        var xhr = new XMLHttpRequest()
+        xhr.open("GET", apiBaseUrl + "/api/products")
+        setAuthHeader(xhr)
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== XMLHttpRequest.DONE) return
+            if (handleAuthError(xhr)) return
+            if (xhr.status === 200) {
+                var resp = JSON.parse(xhr.responseText)
+                productData = resp.products
+                productModel.clear()
+                for (var i = 0; i < resp.products.length; i++) {
+                    productModel.append({ rowJson: JSON.stringify(resp.products[i]) })
+                }
+                selectedProductId   = -1
+                selectedProductData = null
+                outputText = "✓ " + resp.count + qsTr(" Produkte geladen")
+            } else {
+                outputText = "✗ Produkte laden fehlgeschlagen: HTTP " + xhr.status
+            }
+        }
+        xhr.send()
+    }
+
+    function saveProduct() {
+        if (!isLoggedIn) return
+
+        var salesText = pfSales.text.replace(",", ".")
+        var purchText = pfPurchase.text.replace(",", ".")
+
+        var payload = {
+            product_number: pfNumber.text,
+            gtin:           pfGtin.text === "" ? null : parseInt(pfGtin.text),
+            name:           pfName.text,
+            unit:           pfUnit.currentText,
+            purchase_price: purchText === "" ? null : parseFloat(purchText),
+            sales_price:    parseFloat(salesText),
+            vat_code:       pfVat.currentIndex === 0 ? 1 : 2,
+            category_id:    pfCatId.text === "" ? null : parseInt(pfCatId.text),
+            supplier_id:    pfSuppId.text === "" ? null : parseInt(pfSuppId.text),
+            description:    pfDesc.text === "" ? null : pfDesc.text,
+            active:         pfActive.checked ? 1 : 0
+        }
+
+        var isNew = productDialog.editId < 0
+        var method = isNew ? "POST" : "PUT"
+        var url    = apiBaseUrl + "/api/products" + (isNew ? "" : "/" + productDialog.editId)
+
+        var xhr = new XMLHttpRequest()
+        xhr.open(method, url)
+        xhr.setRequestHeader("Content-Type", "application/json")
+        setAuthHeader(xhr)
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== XMLHttpRequest.DONE) return
+            if (handleAuthError(xhr)) return
+            if (xhr.status === 200 || xhr.status === 201) {
+                outputText = isNew ? "✓ Produkt angelegt" : "✓ Produkt aktualisiert"
+                loadProducts()
+            } else {
+                try {
+                    var err = JSON.parse(xhr.responseText)
+                    pfError.text = err.message || qsTr("Unbekannter Fehler")
+                } catch(e) {
+                    pfError.text = "HTTP " + xhr.status
+                }
+                productDialog.open()
+            }
+        }
+        xhr.send(JSON.stringify(payload))
+    }
+
+    function deleteProduct(productId) {
+        if (!isLoggedIn || productId < 0) return
+        outputText = qsTr("Lösche Produkt ID ") + productId + "..."
+
+        var xhr = new XMLHttpRequest()
+        xhr.open("DELETE", apiBaseUrl + "/api/products/" + productId)
+        setAuthHeader(xhr)
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== XMLHttpRequest.DONE) return
+            if (handleAuthError(xhr)) return
+            if (xhr.status === 200) {
+                outputText = "✓ Produkt gelöscht"
+                selectedProductId   = -1
+                selectedProductData = null
+                loadProducts()
+            } else {
+                outputText = "✗ Löschen fehlgeschlagen: HTTP " + xhr.status
+            }
+        }
+        xhr.send()
+    }
+
     // ListModel für DB-Tabelle
     ListModel {
         id: tableModel
+    }
+
+    // ListModel für Produkte
+    ListModel {
+        id: productModel
     }
 
     // Beim Start Login-Dialog öffnen

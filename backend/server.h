@@ -37,6 +37,15 @@ private:
     QHttpServerResponse handleShutdown(const QHttpServerRequest &request);
     QHttpServerResponse handleHealth();
 
+    // Product CRUD Handlers
+    QHttpServerResponse handleGetProducts(const QHttpServerRequest &request);
+    QHttpServerResponse handleCreateProduct(const QHttpServerRequest &request);
+    QHttpServerResponse handleUpdateProduct(int productId, const QHttpServerRequest &request);
+    QHttpServerResponse handleDeleteProduct(int productId, const QHttpServerRequest &request);
+
+    // Username aus Bearer-Token extrahieren
+    QString getUsernameFromRequest(const QHttpServerRequest &request) const;
+
     // Auth-Prüfung — gibt leeren String zurück wenn gültig, sonst Fehlermeldung
     QString checkAuth(const QHttpServerRequest &request) const;
 
