@@ -47,8 +47,60 @@ function check_command() {
     fi
 }
 
-echo "Schritt 1: Voraussetzungen prüfen"
-echo "=================================="
+echo "Schritt 1: Xcode prüfen und konfigurieren"
+echo "==========================================="
+
+# Xcode.app muss aus dem App Store installiert sein (nicht nur CommandLineTools)
+XCODE_APP="/Applications/Xcode.app"
+XCODE_DEV_DIR="$XCODE_APP/Contents/Developer"
+
+if [ ! -d "$XCODE_APP" ]; then
+    echo ""
+    echo -e "${RED}╔══════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${RED}║  Xcode.app nicht gefunden!                               ║${NC}"
+    echo -e "${RED}║                                                          ║${NC}"
+    echo -e "${RED}║  Bitte installiere Xcode aus dem Mac App Store:          ║${NC}"
+    echo -e "${RED}║  https://apps.apple.com/app/xcode/id497799835            ║${NC}"
+    echo -e "${RED}║                                                          ║${NC}"
+    echo -e "${RED}║  Danach setup-mac.sh erneut ausführen.                   ║${NC}"
+    echo -e "${RED}╚══════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    exit 1
+fi
+info "Xcode.app gefunden ✓"
+
+# xcode-select auf Xcode.app zeigen lassen (nicht CommandLineTools)
+CURRENT_DEV_DIR=$(xcode-select -p 2>/dev/null || echo "")
+if [ "$CURRENT_DEV_DIR" != "$XCODE_DEV_DIR" ]; then
+    step "Setze Xcode Developer Directory (sudo erforderlich)..."
+    sudo xcode-select --switch "$XCODE_DEV_DIR"
+    info "xcode-select → $XCODE_DEV_DIR ✓"
+else
+    info "xcode-select korrekt auf Xcode.app gesetzt ✓"
+fi
+
+# Xcode Lizenz akzeptieren (sonst schlägt erster Build interaktiv nach)
+if ! xcodebuild -version &>/dev/null 2>&1; then
+    step "Akzeptiere Xcode Lizenzbedingungen (sudo erforderlich)..."
+    sudo xcodebuild -license accept
+    info "Xcode-Lizenz akzeptiert ✓"
+else
+    info "Xcode-Lizenz bereits akzeptiert ✓"
+fi
+
+# First-Launch-Komponenten initialisieren (simulators etc., non-interaktiv)
+sudo xcodebuild -runFirstLaunch 2>/dev/null || true
+
+# SDK-Pfad verifizieren – genau diese Lücke war der type_traits-Fehler
+SDK_PATH=$(xcrun --show-sdk-path 2>/dev/null || echo "")
+if [ -z "$SDK_PATH" ]; then
+    error "xcrun findet kein macOS SDK – Xcode-Installation prüfen."
+fi
+info "macOS SDK: $SDK_PATH ✓"
+
+echo ""
+echo "Schritt 2: Voraussetzungen prüfen"
+echo "==================================="
 
 # Homebrew
 if ! check_command brew; then
@@ -87,7 +139,7 @@ fi
 info "Alle Voraussetzungen erfüllt!"
 echo ""
 
-echo "Schritt 2: Qt Umgebung konfigurieren"
+echo "Schritt 3: Qt Umgebung konfigurieren"
 echo "====================================="
 
 # Qt6 Pfade setzen (für Backend - native Kompilierung)
@@ -339,7 +391,7 @@ if command -v emcc &> /dev/null; then
 fi
 echo ""
 
-echo "Schritt 3: Docker Container starten"
+echo "Schritt 4: Docker Container starten"
 echo "===================================="
 
 # Prüfe ob Docker läuft
@@ -365,7 +417,7 @@ fi
 
 echo ""
 
-echo "Schritt 4: QPSQL-Treiber prüfen"
+echo "Schritt 5: QPSQL-Treiber prüfen"
 echo "================================="
 
 # Prüfe ob QPSQL-Plugin vorhanden ist
@@ -394,7 +446,7 @@ fi
 
 echo ""
 
-echo "Schritt 5: Backend kompilieren"
+echo "Schritt 6: Backend kompilieren"
 echo "==============================="
 
 cd "$PROJECT_DIR/backend"
@@ -420,7 +472,7 @@ fi
 cd "$PROJECT_DIR"
 echo ""
 
-echo "Schritt 6: Frontend kompilieren (WebAssembly)"
+echo "Schritt 7: Frontend kompilieren (WebAssembly)"
 echo "==============================================="
 
 # Emscripten sicherstellen (muss im PATH sein für WASM-Build)
@@ -482,7 +534,7 @@ fi
 cd "$PROJECT_DIR"
 echo ""
 
-echo "Schritt 7: Datenbank prüfen"
+echo "Schritt 8: Datenbank prüfen"
 echo "============================"
 
 # Prüfe ob Daten vorhanden

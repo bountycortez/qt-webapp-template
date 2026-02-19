@@ -31,13 +31,30 @@ unix:!macx {
 }
 
 macx {
-    # Mac ARM mit Homebrew
-    INCLUDEPATH += /opt/homebrew/opt/postgresql@15/include
-    LIBS += -L/opt/homebrew/opt/postgresql@15/lib -lpq
-    
+    # libpq Pfad dynamisch ermitteln:
+    # brew install libpq  → /opt/homebrew/opt/libpq   (empfohlen, kein Konflikt)
+    # brew install postgresql@17 → /opt/homebrew/opt/postgresql@17
+    # brew install postgresql@15 → /opt/homebrew/opt/postgresql@15  (legacy)
+    LIBPQ_PREFIX = $$system(brew --prefix libpq 2>/dev/null)
+    isEmpty(LIBPQ_PREFIX) {
+        LIBPQ_PREFIX = $$system(brew --prefix postgresql@17 2>/dev/null)
+    }
+    isEmpty(LIBPQ_PREFIX) {
+        LIBPQ_PREFIX = $$system(brew --prefix postgresql@15 2>/dev/null)
+    }
+    isEmpty(LIBPQ_PREFIX) {
+        LIBPQ_PREFIX = /opt/homebrew/opt/libpq   # letzter Fallback
+    }
+    message("libpq prefix: $$LIBPQ_PREFIX")
+
+    INCLUDEPATH += $$LIBPQ_PREFIX/include
+    LIBS        += -L$$LIBPQ_PREFIX/lib -lpq
+
     # Qt6 Pfad
-    INCLUDEPATH += /opt/homebrew/opt/qt@6/include
-    LIBS += -L/opt/homebrew/opt/qt@6/lib
+    QT6_PREFIX = $$system(brew --prefix qt@6 2>/dev/null)
+    isEmpty(QT6_PREFIX): QT6_PREFIX = /opt/homebrew/opt/qt@6
+    INCLUDEPATH += $$QT6_PREFIX/include
+    LIBS        += -L$$QT6_PREFIX/lib
 }
 
 # Für Oracle Production (auskommentiert für Development)

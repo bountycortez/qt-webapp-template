@@ -2,18 +2,21 @@
 
 ## 1. Voraussetzungen installieren
 
+**Vor dem Setup-Script manuell installieren:**
+
+| Was | Woher |
+|-----|-------|
+| **Xcode** (vollständig, nicht nur CommandLineTools) | [Mac App Store](https://apps.apple.com/app/xcode/id497799835) |
+| **Docker Desktop** | [docker.com](https://www.docker.com/products/docker-desktop) |
+
+Xcode mindestens einmal öffnen, damit die Installation abgeschlossen wird.
+
+**Homebrew** wird ebenfalls benötigt (falls noch nicht vorhanden):
 ```bash
-# Homebrew (falls noch nicht installiert)
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Qt6, Build-Tools, Docker
-brew install qt@6 cmake ninja
-# Docker Desktop von https://docker.com herunterladen
-
-# Emscripten SDK
-cd ~ && git clone https://github.com/nicholasgasior/emsdk.git
-cd emsdk && ./emsdk install 4.0.7 && ./emsdk activate 4.0.7
 ```
+
+Alles andere (Qt, cmake, ninja, libpq, Emscripten, QPSQL-Treiber) erledigt `setup-mac.sh` automatisch.
 
 ## 2. Projekt Setup
 
@@ -61,6 +64,19 @@ Zertifikatswarnung akzeptieren → Login-Dialog erscheint.
 
 ## Troubleshooting
 
+**`fatal error: 'type_traits' file not found`**
+`xcode-select` zeigt auf CommandLineTools statt Xcode.app — `setup-mac.sh` korrigiert das automatisch. Manuell:
+```bash
+sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+```
+
+**`ld: library 'pq' not found`**
+libpq fehlt oder wurde nicht gefunden:
+```bash
+brew install libpq
+```
+`backend.pro` erkennt den Pfad automatisch via `brew --prefix libpq`.
+
 **"Qt not found"**
 ```bash
 export PATH="/opt/homebrew/opt/qt@6/bin:$PATH"
@@ -71,6 +87,11 @@ export PATH="/opt/homebrew/opt/qt@6/bin:$PATH"
 **"emcc not found"**
 ```bash
 source ~/emsdk/emsdk_env.sh
+```
+
+**Xcode Lizenz-Fehler beim Build**
+```bash
+sudo xcodebuild -license accept
 ```
 
 **Zertifikatswarnung im Browser** → "Advanced" → "Proceed to localhost" (normal bei Self-Signed)

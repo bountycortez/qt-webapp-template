@@ -21,32 +21,30 @@ Browser (WASM)  →  NGINX (HTTPS:8443)  →  Backend (HTTP:3000)  →  PostgreS
 
 ## Voraussetzungen (Mac ARM)
 
-### 1. Homebrew
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
+Folgende zwei Apps müssen **vor** dem Setup-Script manuell installiert werden:
 
-### 2. Qt6 + Build-Tools
-```bash
-brew install qt@6 cmake ninja
-brew link qt@6
-```
+### 1. Xcode (aus dem Mac App Store)
+Xcode wird für den C++ Compiler und das macOS SDK benötigt.
+Nach der Installation läuft das Setup-Script automatisch:
+- `xcode-select --switch` auf Xcode.app (verhindert `type_traits`-Fehler bei CommandLineTools)
+- Xcode-Lizenzbedingungen akzeptieren
 
-### 3. Emscripten SDK
-```bash
-cd ~
-git clone https://github.com/nicholasgasior/emsdk.git
-cd emsdk
-./emsdk install 4.0.7
-./emsdk activate 4.0.7
-```
+→ [Xcode im App Store](https://apps.apple.com/app/xcode/id497799835)
 
-### 4. Docker Desktop
-Download von https://www.docker.com/products/docker-desktop
-(Für PostgreSQL und NGINX)
+> **Hinweis:** Xcode muss mindestens einmal geöffnet worden sein, damit die Installation abgeschlossen wird.
 
-### 5. Qt für WebAssembly aus Source bauen
-Das Setup-Script (`scripts/setup-mac.sh`) erledigt dies automatisch.
+### 2. Docker Desktop (von docker.com)
+Für PostgreSQL und NGINX.
+
+→ [Docker Desktop Download](https://www.docker.com/products/docker-desktop)
+
+### Alles andere erledigt `setup-mac.sh` automatisch
+
+- Homebrew-Packages: `qt@6`, `cmake`, `ninja`, `libpq`
+- Emscripten SDK (korrekte Version passend zu Qt)
+- Qt für WebAssembly (aus Source gebaut)
+- QPSQL-Treiber (PostgreSQL-Plugin für Qt)
+- libpq wird via `brew --prefix` dynamisch gefunden — kein Hardcoding auf eine bestimmte PostgreSQL-Version
 
 ## Quick Start
 
@@ -176,7 +174,7 @@ Für Firmennetzwerke stehen alternative NGINX-Configs bereit:
 
 **Tab 5: Database** — Greeting laden (DE/EN/ES), DB-Browser (Tabellenliste + Daten + Detail-Popup), Server-Kontrolle, API-Info
 
-**Tab 6: Produkte** — Vollständiges CRUD für die `product`-Tabelle: Tabellen-Ansicht mit Klick-Selektion, Doppelklick zum Bearbeiten, Dialoge für Neu/Bearbeiten/Löschen. Felder: Art.-Nr., GTIN, Name, Einheit, EK-/VK-Preis, MwSt.-Code, Kategorie, Lieferant, Beschreibung, Aktiv-Flag. Beim ersten Start werden 5 Lebensmittel-Beispielsätze angelegt (Mineralwasser, Chips, Reis, Schokolade, Brot).
+**Tab 6: Produkte** — Vollständiges CRUD für die `product`-Tabelle: Tabellen-Ansicht mit Klick-Selektion, Doppelklick zum Bearbeiten, Dialoge für Neu/Bearbeiten/Löschen. Felder: Art.-Nr., GTIN, Name, Einheit (ST/KG), EK-/VK-Preis (Komma-Dezimal), MwSt.-Satz (1 = 10% ermäßigt / 2 = 20% normal, Österreich), Kategorie, Lieferant, Beschreibung, Aktiv-Flag. Bearbeitungs-Dialog ist resizeable. Beim ersten Start werden 5 Lebensmittel-Beispielsätze angelegt (Mineralwasser, Chips, Reis, Schokolade, Brot).
 
 ### Weitere Features
 
@@ -222,6 +220,32 @@ Für Production: Let's Encrypt oder Firmen-Zertifikat einsetzen (siehe `MIGRATIO
 docker logs -f webapp-nginx
 # PostgreSQL
 docker logs -f webapp-postgres
+```
+
+## Bekannte Setup-Probleme
+
+### `fatal error: 'type_traits' file not found`
+`xcode-select` zeigt noch auf CommandLineTools statt Xcode.app. `setup-mac.sh` korrigiert das automatisch. Manuell:
+```bash
+sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+```
+
+### `ld: library 'pq' not found`
+`backend.pro` nutzt `brew --prefix` zur Laufzeit, um libpq unabhängig von der installierten PostgreSQL-Version zu finden. Falls der Fehler trotzdem auftritt:
+```bash
+brew install libpq
+brew link --force libpq   # optional, falls pg_config fehlt
+```
+
+### Xcode Lizenz-Dialog beim ersten Build
+`setup-mac.sh` akzeptiert die Lizenz automatisch via `sudo xcodebuild -license accept`. Falls es manuell nötig ist:
+```bash
+sudo xcodebuild -license accept
+```
+
+### `emcc not found`
+```bash
+source ~/emsdk/emsdk_env.sh
 ```
 
 ## Production Deployment

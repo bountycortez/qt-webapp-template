@@ -298,19 +298,18 @@ ApplicationWindow {
                     Item {
                         ColumnLayout {
                             width: parent.width
-                            spacing: 20
-                            
-                            // Text Input
+                            spacing: 16
+
+                            // ── Text Input (volle Breite) ──────────────────────────
                             GroupBox {
                                 title: "Text Input"
                                 Layout.fillWidth: true
-                                
+
                                 GridLayout {
                                     columns: 2
-                                    columnSpacing: 20
-                                    rowSpacing: 15
+                                    columnSpacing: 20; rowSpacing: 12
                                     width: parent.width
-                                    
+
                                     Label { text: "TextField:" }
                                     TextField {
                                         id: textField1
@@ -318,7 +317,7 @@ ApplicationWindow {
                                         Layout.fillWidth: true
                                         onTextChanged: outputText = "TextField: " + text
                                     }
-                                    
+
                                     Label { text: "Passwort:" }
                                     TextField {
                                         id: passwordField
@@ -327,7 +326,7 @@ ApplicationWindow {
                                         Layout.fillWidth: true
                                         onTextChanged: outputText = "Passwort eingegeben (Länge: " + text.length + ")"
                                     }
-                                    
+
                                     Label { text: "Mit Validator:" }
                                     TextField {
                                         placeholderText: "Nur Zahlen"
@@ -335,91 +334,91 @@ ApplicationWindow {
                                         Layout.fillWidth: true
                                         onTextChanged: outputText = "Zahl: " + text
                                     }
-                                    
+
                                     Label { text: "TextArea:" }
                                     TextArea {
                                         id: textArea
                                         placeholderText: "Mehrzeiliger Text..."
                                         wrapMode: TextArea.Wrap
                                         Layout.fillWidth: true
-                                        Layout.preferredHeight: 100
+                                        Layout.preferredHeight: 80
                                         onTextChanged: outputText = "TextArea (" + text.length + " Zeichen): " + text.substring(0, 50)
                                     }
                                 }
                             }
-                            
-                            // Numerische Eingabe + Datum/Zeit nebeneinander
+
+                            // ── Links: Numerische Eingabe | Rechts: Datum+Zeit+Kalender (feste Größe) ──
                             RowLayout {
                                 Layout.fillWidth: true
-                                spacing: 15
+                                spacing: 16
 
-                                // LINKS: Numerische Eingabe
+                                // LINKS ── Numerische Eingabe (füllt verbleibende Breite) ─
                                 GroupBox {
                                     title: qsTr("Numerische Eingabe")
                                     Layout.fillWidth: true
+                                    Layout.alignment: Qt.AlignTop
 
                                     GridLayout {
                                         columns: 3
-                                        columnSpacing: 15
-                                        rowSpacing: 12
+                                        columnSpacing: 10; rowSpacing: 10
+                                        width: parent.width
 
                                         Label { text: "SpinBox:" }
                                         SpinBox {
                                             id: spinBox1
                                             from: 0; to: 100; value: 42
+                                            Layout.columnSpan: 2
                                             onValueChanged: outputText = "SpinBox: " + value
                                         }
-                                        Text { text: qsTr("Wert: ") + spinBox1.value; color: "#E57373" }
 
-                                        Label { text: "Integer (0-100):" }
+                                        Label { text: "Integer:" }
                                         TextField {
                                             id: intField
-                                            placeholderText: "0 - 100"
-                                            Layout.preferredWidth: 120
+                                            placeholderText: "0–100"
+                                            Layout.fillWidth: true
                                             validator: IntValidator { bottom: 0; top: 100 }
                                             inputMethodHints: Qt.ImhDigitsOnly
                                             onTextChanged: {
                                                 if (text !== "") {
-                                                    var v = parseInt(text);
-                                                    if (v >= 0 && v <= 100) outputText = "Integer: " + v;
+                                                    var v = parseInt(text)
+                                                    if (v >= 0 && v <= 100) outputText = "Integer: " + v
                                                 }
                                             }
                                         }
                                         Text {
-                                            text: intField.text !== "" ? (intField.acceptableInput ? "✓" : "✗ 0-100") : ""
+                                            text: intField.text !== "" ? (intField.acceptableInput ? "✓" : "✗") : ""
                                             color: intField.acceptableInput ? "#4CAF50" : "#F44336"
                                             font.bold: true
                                         }
 
-                                        Label { text: "Double (2 Dez.):" }
+                                        Label { text: "Double:" }
                                         TextField {
                                             id: doubleField
-                                            placeholderText: "z.B. 3.14"
-                                            Layout.preferredWidth: 120
+                                            placeholderText: "3.14"
+                                            Layout.fillWidth: true
                                             validator: RegularExpressionValidator {
                                                 regularExpression: /^\d{0,4}([.,]\d{0,2})?$/
                                             }
                                             onTextChanged: {
-                                                if (text !== "" && acceptableInput) outputText = "Double: " + text;
+                                                if (text !== "" && acceptableInput) outputText = "Double: " + text
                                             }
                                         }
                                         Text {
-                                            text: doubleField.text !== "" ? (doubleField.acceptableInput ? "✓ " + doubleField.text : "✗") : ""
+                                            text: doubleField.text !== "" ? (doubleField.acceptableInput ? "✓" : "✗") : ""
                                             color: doubleField.acceptableInput ? "#4CAF50" : "#F44336"
                                             font.bold: true
                                         }
 
-                                        Label { text: "Double SpinBox:" }
+                                        Label { text: "€-SpinBox:" }
                                         SpinBox {
                                             id: doubleSpinBox
                                             from: 0; to: 1000; value: 314; stepSize: 10
-
+                                            Layout.columnSpan: 2
                                             property int decimals: 2
                                             property real realValue: value / 100
-
                                             validator: DoubleValidator {
                                                 bottom: Math.min(doubleSpinBox.from, doubleSpinBox.to)
-                                                top: Math.max(doubleSpinBox.from, doubleSpinBox.to)
+                                                top:    Math.max(doubleSpinBox.from, doubleSpinBox.to)
                                             }
                                             textFromValue: function(value, locale) {
                                                 return Number(value / 100).toLocaleString(locale, 'f', doubleSpinBox.decimals)
@@ -429,222 +428,221 @@ ApplicationWindow {
                                             }
                                             onValueChanged: outputText = "Double SpinBox: " + realValue.toFixed(2)
                                         }
-                                        Text { text: "€ " + doubleSpinBox.realValue.toFixed(2); color: "#4CAF50"; font.bold: true }
 
-                                        // Dial
                                         Label { text: "Dial:" }
                                         Item {
-                                            Layout.preferredWidth: 180
-                                            Layout.preferredHeight: 180
-
+                                            Layout.columnSpan: 2
+                                            Layout.preferredWidth: 130
+                                            Layout.preferredHeight: 130
                                             Dial {
                                                 id: dial1
                                                 from: 0; to: 360; value: 180
                                                 anchors.centerIn: parent
-                                                width: 130; height: 130
+                                                width: 100; height: 100
                                                 onValueChanged: outputText = "Dial: " + Math.round(value) + "°"
                                             }
                                             Text {
                                                 anchors.centerIn: parent
                                                 text: Math.round(dial1.value) + "°"
-                                                font.pixelSize: 18; font.bold: true; color: "#C62828"
+                                                font.pixelSize: 15; font.bold: true; color: "#C62828"
                                             }
-                                            Text { text: "0°"; font.pixelSize: 10; color: "#999"; x: 10; y: 155 }
-                                            Text { text: "360°"; font.pixelSize: 10; color: "#999"; x: 145; y: 155 }
-                                            Text { text: "270°"; font.pixelSize: 10; color: "#999"; x: 160; y: 75 }
-                                            Text { text: "180°"; font.pixelSize: 10; color: "#999"; x: 75; y: 0 }
-                                            Text { text: "90°"; font.pixelSize: 10; color: "#999"; x: -5; y: 75 }
+                                            Text { text: "0°";   font.pixelSize: 9; color: "#999"; x: 5;   y: 105 }
+                                            Text { text: "360°"; font.pixelSize: 9; color: "#999"; x: 95;  y: 105 }
+                                            Text { text: "180°"; font.pixelSize: 9; color: "#999"; x: 45;  y: 2   }
                                         }
-                                        Item {}
                                     }
                                 }
 
-                                // RECHTS: Datum & Zeit
+                                // RECHTS ── Datum, Zeit & Kalender (feste Zellgröße, kein Overflow) ──
                                 GroupBox {
-                                    title: qsTr("Datum & Zeit")
-                                    Layout.preferredWidth: 350
-                                    Layout.fillHeight: true
+                                    id: calGroupBox
+                                    title: qsTr("Datum, Zeit & Kalender")
+                                    Layout.alignment: Qt.AlignTop
 
-                                    ColumnLayout {
-                                        spacing: 12
-                                        width: parent.width
+                                    // Feste Zellgröße 44px → Kalender 308×264px ≈ 8 cm bei 96 dpi
+                                    readonly property int cellSz: 44
+                                    readonly property int calW:   cellSz * 7   // 308 px
+                                    readonly property int calH:   cellSz * 6   // 264 px
 
-                                        // Datum (SpinBox)
-                                        RowLayout {
+                                    // Innerer Container – Größe vom Inhalt bestimmt (kein anchors.fill)
+                                    Rectangle {
+                                        width:          parent.width
+                                        implicitWidth:  dtCol.implicitWidth  + 16
+                                        implicitHeight: dtCol.implicitHeight + 16
+                                        border.color: "#E57373"; border.width: 1
+                                        radius: 6; color: "#FFFFFF"
+
+                                        ColumnLayout {
+                                            id: dtCol
+                                            anchors.left: parent.left; anchors.right: parent.right
+                                            anchors.top:  parent.top;  anchors.margins: 8
                                             spacing: 4
-                                            Label { text: qsTr("Datum:"); font.bold: true; Layout.preferredWidth: 50 }
-                                            SpinBox {
-                                                id: dayBox
-                                                from: 1; to: 31; value: new Date().getDate()
-                                                editable: true; implicitWidth: 72
-                                                onValueChanged: updateDateOutput()
-                                            }
-                                            Text { text: "."; font.pixelSize: 14; font.bold: true }
-                                            SpinBox {
-                                                id: monthBox
-                                                from: 1; to: 12; value: new Date().getMonth() + 1
-                                                editable: true; implicitWidth: 72
-                                                onValueChanged: updateDateOutput()
-                                            }
-                                            Text { text: "."; font.pixelSize: 14; font.bold: true }
-                                            SpinBox {
-                                                id: yearBox
-                                                from: 2000; to: 2099; value: new Date().getFullYear()
-                                                editable: true; implicitWidth: 90
-                                                onValueChanged: updateDateOutput()
-                                            }
-                                        }
-                                        Text {
-                                            id: dateDisplay; text: ""
-                                            color: "#C62828"; font.bold: true; font.pixelSize: 13
-                                            Layout.leftMargin: 55
-                                        }
 
-                                        // Trennlinie
-                                        Rectangle { Layout.fillWidth: true; height: 1; color: "#e0e0e0" }
-
-                                        // Zeit
-                                        RowLayout {
-                                            spacing: 4
-                                            Label { text: qsTr("Zeit:"); font.bold: true; Layout.preferredWidth: 50 }
-                                            SpinBox {
-                                                id: hourBox
-                                                from: 0; to: 23; value: new Date().getHours()
-                                                editable: true; implicitWidth: 72
-                                                onValueChanged: updateTimeOutput()
-                                                textFromValue: function(value) { return String(value).padStart(2, '0'); }
-                                            }
-                                            Text { text: ":"; font.pixelSize: 16; font.bold: true }
-                                            SpinBox {
-                                                id: minuteBox
-                                                from: 0; to: 59; value: new Date().getMinutes()
-                                                editable: true; implicitWidth: 72
-                                                onValueChanged: updateTimeOutput()
-                                                textFromValue: function(value) { return String(value).padStart(2, '0'); }
-                                            }
-                                            Text { text: ":"; font.pixelSize: 16; font.bold: true }
-                                            SpinBox {
-                                                id: secondBox
-                                                from: 0; to: 59; value: 0
-                                                editable: true; implicitWidth: 72
-                                                onValueChanged: updateTimeOutput()
-                                                textFromValue: function(value) { return String(value).padStart(2, '0'); }
-                                            }
-                                        }
-                                        Text {
-                                            id: timeDisplay; text: ""
-                                            color: "#C62828"; font.bold: true; font.pixelSize: 13
-                                            Layout.leftMargin: 55
-                                        }
-
-                                        // Trennlinie
-                                        Rectangle { Layout.fillWidth: true; height: 1; color: "#e0e0e0" }
-
-                                        // Kalender-Widget
-                                        Label { text: qsTr("Kalender:"); font.bold: true }
-
-                                        Rectangle {
-                                            Layout.fillWidth: true
-                                            Layout.preferredHeight: 220
-                                            border.color: "#E57373"
-                                            border.width: 1
-                                            radius: 6
-                                            color: "#FFFFFF"
-                                            clip: true
-
-                                            property int calYear: yearBox.value
-                                            property int calMonth: monthBox.value - 1
-                                            property int calDay: dayBox.value
-
-                                            ColumnLayout {
-                                                anchors.fill: parent
-                                                anchors.margins: 6
+                                            // ── Datum: Label-Anzeige + 3× +/- (kein Wert sichtbar) ──
+                                            RowLayout {
                                                 spacing: 4
+                                                Text {
+                                                    id: dateDisplay
+                                                    text: ""; color: "#C62828"
+                                                    font.bold: true; font.pixelSize: 14
+                                                    Layout.minimumWidth: 92
+                                                }
+                                                Item { Layout.fillWidth: true }
+                                                SpinBox {
+                                                    id: dayBox
+                                                    from: 1; to: 31; value: new Date().getDate()
+                                                    implicitWidth: 72; editable: false
+                                                    textFromValue: function(value) { return "" }
+                                                    onValueChanged: updateDateOutput()
+                                                }
+                                                SpinBox {
+                                                    id: monthBox
+                                                    from: 1; to: 12; value: new Date().getMonth() + 1
+                                                    implicitWidth: 72; editable: false
+                                                    textFromValue: function(value) { return "" }
+                                                    onValueChanged: updateDateOutput()
+                                                }
+                                                SpinBox {
+                                                    id: yearBox
+                                                    from: 2000; to: 2099; value: new Date().getFullYear()
+                                                    implicitWidth: 72; editable: false
+                                                    textFromValue: function(value) { return "" }
+                                                    onValueChanged: updateDateOutput()
+                                                }
+                                            }
 
-                                                // Monat/Jahr Navigation
-                                                RowLayout {
-                                                    Layout.fillWidth: true
-                                                    Button {
-                                                        text: "◀"
-                                                        flat: true
-                                                        implicitWidth: 30; implicitHeight: 28
-                                                        onClicked: {
-                                                            if (monthBox.value > 1) monthBox.value--;
-                                                            else { monthBox.value = 12; yearBox.value--; }
-                                                        }
+                                            // ── Zeit: Label-Anzeige + 3× +/- ────────────────────
+                                            RowLayout {
+                                                spacing: 4
+                                                Text {
+                                                    id: timeDisplay
+                                                    text: ""; color: "#C62828"
+                                                    font.bold: true; font.pixelSize: 14
+                                                    Layout.minimumWidth: 92
+                                                }
+                                                Item { Layout.fillWidth: true }
+                                                SpinBox {
+                                                    id: hourBox
+                                                    from: 0; to: 23; value: new Date().getHours()
+                                                    implicitWidth: 72; editable: false
+                                                    textFromValue: function(value) { return "" }
+                                                    onValueChanged: updateTimeOutput()
+                                                }
+                                                SpinBox {
+                                                    id: minuteBox
+                                                    from: 0; to: 59; value: new Date().getMinutes()
+                                                    implicitWidth: 72; editable: false
+                                                    textFromValue: function(value) { return "" }
+                                                    onValueChanged: updateTimeOutput()
+                                                }
+                                                SpinBox {
+                                                    id: secondBox
+                                                    from: 0; to: 59; value: 0
+                                                    implicitWidth: 72; editable: false
+                                                    textFromValue: function(value) { return "" }
+                                                    onValueChanged: updateTimeOutput()
+                                                }
+                                            }
+
+                                            Rectangle { height: 1; Layout.fillWidth: true; color: "#FFCDD2" }
+
+                                            // ── Monat/Jahr Navigation (Breite = calW) ────────────
+                                            RowLayout {
+                                                Layout.preferredWidth: calGroupBox.calW
+                                                Layout.alignment: Qt.AlignHCenter
+                                                Button {
+                                                    text: "◀"; flat: true
+                                                    implicitWidth: 36; implicitHeight: 34
+                                                    onClicked: {
+                                                        if (monthBox.value > 1) monthBox.value--
+                                                        else { monthBox.value = 12; yearBox.value-- }
                                                     }
-                                                    Item { Layout.fillWidth: true }
+                                                }
+                                                Item { Layout.fillWidth: true }
+                                                Text {
+                                                    text: ["", "Januar", "Februar", "März", "April", "Mai", "Juni",
+                                                           "Juli", "August", "September", "Oktober", "November", "Dezember"
+                                                          ][monthBox.value] + "  " + yearBox.value
+                                                    font.bold: true; font.pixelSize: 15; color: "#C62828"
+                                                }
+                                                Item { Layout.fillWidth: true }
+                                                Button {
+                                                    text: "▶"; flat: true
+                                                    implicitWidth: 36; implicitHeight: 34
+                                                    onClicked: {
+                                                        if (monthBox.value < 12) monthBox.value++
+                                                        else { monthBox.value = 1; yearBox.value++ }
+                                                    }
+                                                }
+                                            }
+
+                                            // ── Wochentage-Header (je cellSz breit) ──────────────
+                                            Row {
+                                                Layout.alignment: Qt.AlignHCenter
+                                                Repeater {
+                                                    model: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
                                                     Text {
-                                                        text: ["", "Januar", "Februar", "März", "April", "Mai", "Juni",
-                                                               "Juli", "August", "September", "Oktober", "November", "Dezember"][monthBox.value] + " " + yearBox.value
-                                                        font.bold: true; font.pixelSize: 14; color: "#C62828"
-                                                    }
-                                                    Item { Layout.fillWidth: true }
-                                                    Button {
-                                                        text: "▶"
-                                                        flat: true
-                                                        implicitWidth: 30; implicitHeight: 28
-                                                        onClicked: {
-                                                            if (monthBox.value < 12) monthBox.value++;
-                                                            else { monthBox.value = 1; yearBox.value++; }
-                                                        }
+                                                        width: calGroupBox.cellSz
+                                                        text: modelData
+                                                        font.pixelSize: 12; font.bold: true
+                                                        color: index >= 5 ? "#C62828" : "#666"
+                                                        horizontalAlignment: Text.AlignHCenter
                                                     }
                                                 }
+                                            }
 
-                                                // Wochentage Header
-                                                Row {
-                                                    Layout.fillWidth: true
-                                                    Repeater {
-                                                        model: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
-                                                        Text {
-                                                            width: (parent.width) / 7
-                                                            text: modelData
-                                                            font.pixelSize: 10; font.bold: true
-                                                            color: "#999"
-                                                            horizontalAlignment: Text.AlignHCenter
-                                                        }
-                                                    }
-                                                }
+                                            Rectangle {
+                                                height: 1; color: "#FFCDD2"
+                                                Layout.preferredWidth: calGroupBox.calW
+                                                Layout.alignment: Qt.AlignHCenter
+                                            }
 
-                                                // Tage-Grid
+                                            // ── Kalender-Grid: FESTE Größe → nie abgeschnitten ───
+                                            Item {
+                                                id: calGridItem
+                                                Layout.preferredWidth:  calGroupBox.calW   // 308 px (fest)
+                                                Layout.preferredHeight: calGroupBox.calH   // 264 px (fest)
+                                                Layout.alignment: Qt.AlignHCenter
+
                                                 Grid {
                                                     id: calGrid
-                                                    Layout.fillWidth: true
-                                                    Layout.fillHeight: true
+                                                    anchors.fill: parent
                                                     columns: 7
 
-                                                    property int daysInMonth: new Date(yearBox.value, monthBox.value, 0).getDate()
-                                                    property int firstDayOfWeek: (new Date(yearBox.value, monthBox.value - 1, 1).getDay() + 6) % 7
+                                                    property int  daysInMonth:    new Date(yearBox.value, monthBox.value, 0).getDate()
+                                                    property int  firstDayOfWeek: (new Date(yearBox.value, monthBox.value - 1, 1).getDay() + 6) % 7
+                                                    property real cellW: calGroupBox.cellSz   // fest 44 px
+                                                    property real cellH: calGroupBox.cellSz   // fest 44 px
 
                                                     Repeater {
                                                         model: 42
-
                                                         Rectangle {
-                                                            property int dayNum: index - calGrid.firstDayOfWeek + 1
-                                                            property bool isValid: dayNum >= 1 && dayNum <= calGrid.daysInMonth
+                                                            property int  dayNum:     index - calGrid.firstDayOfWeek + 1
+                                                            property bool isValid:    dayNum >= 1 && dayNum <= calGrid.daysInMonth
                                                             property bool isSelected: isValid && dayNum === dayBox.value
+                                                            property bool isWeekend:  (index % 7) >= 5
 
-                                                            width: calGrid.width / 7
-                                                            height: 24
-                                                            radius: 12
-                                                            color: isSelected ? "#C62828" : (calDayMouse.containsMouse && isValid ? "#FFEBEE" : "transparent")
+                                                            width:  calGrid.cellW; height: calGrid.cellH
+                                                            radius: Math.min(width, height) * 0.45
+                                                            color:  isSelected ? "#C62828" :
+                                                                    (calDayMouse.containsMouse && isValid ? "#FFEBEE" : "transparent")
 
                                                             Text {
                                                                 anchors.centerIn: parent
-                                                                text: isValid ? dayNum : ""
-                                                                font.pixelSize: 12
-                                                                font.bold: isSelected
-                                                                color: isSelected ? "white" : "#424242"
+                                                                text:           isValid ? dayNum : ""
+                                                                font.pixelSize: 14
+                                                                font.bold:      isSelected
+                                                                color: isSelected ? "white" :
+                                                                       (isWeekend && isValid ? "#E53935" : "#424242")
                                                             }
-
                                                             MouseArea {
                                                                 id: calDayMouse
                                                                 anchors.fill: parent
                                                                 hoverEnabled: true
                                                                 onClicked: {
                                                                     if (isValid) {
-                                                                        dayBox.value = dayNum;
-                                                                        outputText = qsTr("Kalender: ") + dayNum + "." + monthBox.value + "." + yearBox.value;
+                                                                        dayBox.value = dayNum
+                                                                        outputText = qsTr("Kalender: ") + dayNum + "." + monthBox.value + "." + yearBox.value
                                                                     }
                                                                 }
                                                             }
